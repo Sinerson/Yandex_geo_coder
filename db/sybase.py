@@ -20,12 +20,12 @@ class DBConnector(object):
         return pyodbc.connect(';'.join([self.driver, self.server, self.port, self.dbname, self.user, self.passw,
                                         self.lang, self.autocommit, self.hostname, self.procname, self.appname]))
 
-    def __enter__(self):
-        self.dbconn = self.create_connection()
-        return self.dbconn
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.dbconn.close()
+    # def __enter__(self):
+    #     self.dbconn = self.create_connection()
+    #     return self.dbconn
+    #
+    # def __exit__(self, exc_type, exc_val, exc_tb):
+    #     self.dbconn.close()
 
 
 class DbConnection(object):
