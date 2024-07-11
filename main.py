@@ -7,6 +7,7 @@ from yandex_geocoder import Client, YandexGeocoderException, NothingFound, Inval
 from settings import GeoCoders
 from decorators import log_decorator
 
+
 logging.basicConfig(level=logging.DEBUG,
                     filename='log.txt',
                     filemode='a',
@@ -14,6 +15,13 @@ logging.basicConfig(level=logging.DEBUG,
                     datefmt='%H:%M:%S')
 
 yandex_client = Client(GeoCoders.yandex_geocoder)
+
+all_addresses_list: list[dict] = []
+geocoded_addresses: list = []
+
+exist_cnt: int = 0
+added_cnt: int = 0
+notfound_cnt: int = 0
 
 
 def create_virtualenv():
@@ -26,14 +34,16 @@ def install_requiremets():
     subprocess.run(["venv/Scripts/pip", "install", "-r", "requirements.txt"], check=True)
 
 
-def get_all_addresses() -> list[dict]:
+def get_all_addresses() -> None:
     """ Получение списка всех адресов по задданым в условии запроса критериям """
-    return DbConnection.execute_query(all_addr)
+    result = DbConnection.execute_query(all_addr)
+    all_addresses_list.extend(result)
 
 
-def get_geocoded_addresses() -> list[dict]:
+def get_geocoded_addresses() -> None:
     """ Список уже геокодированных кодов адреса """
-    return DbConnection.execute_query(existing_addresses)
+    result = DbConnection.execute_query(existing_addresses)
+    geocoded_addresses.extend(result)
 
 
 def insert_new_address(address_code: int, longitude: float, latitude: float) -> None:
@@ -43,13 +53,13 @@ def insert_new_address(address_code: int, longitude: float, latitude: float) -> 
 
 @log_decorator
 def geocode() -> any:
-    exist_cnt = 0
-    added_cnt = 0
+    global exist_cnt, added_cnt
     somelist = []
-    for a in get_geocoded_addresses():
+    get_geocoded_addresses()
+    get_all_addresses()
+    for a in geocoded_addresses:
         somelist.append(a['ADDRESS_CODE'])
-    all = get_all_addresses()
-    for el in all:
+    for el in all_addresses_list:
         if el['ADDRESS_CODE'] in somelist:
             exist_cnt += 1
         else:
@@ -60,28 +70,37 @@ def geocode() -> any:
                                    longitude=lon,
                                    latitude=lat
                                    )
+                logging.info(f"Добавили код: {el['ADDRESS_CODE']}")
+                added_cnt += 1
             except InvalidKey:
+
                 logging.error(
                     f"API Ключ некорректен. Геокодирование адреса: {el['ADDRESS_CODE']},"
                     f" {el['COUNTRY_NAME']},{el['COUNTRY_REGION_NAME']},{el['AREA_REGION_NAME']},"
                     f"{el['TOWN_NAME']},{el['STREET_NAME']},{el['HOUSE']}")
             except NothingFound:
+                global notfound_cnt
+                notfound_cnt += 1
                 logging.warning(
                     f"Ничего не нашли для: {el['ADDRESS_CODE']}({el['COUNTRY_NAME']},{el['COUNTRY_REGION_NAME']},"
                     f"{el['AREA_REGION_NAME']},{el['TOWN_NAME']},{el['STREET_NAME']},{el['HOUSE']})")
             except YandexGeocoderException as y:
                 logging.error(y)
-            finally:
-                logging.info(f"Геокодирование завершено")
-            logging.info(f"Добавили код: {el['ADDRESS_CODE']}")
-            added_cnt += 1
-    return exist_cnt, added_cnt
+            # finally:
+            #     logging.info(f"Геокодирование завершено")
+
+
+    # return exist_cnt, added_cnt
+
+
+async def main():
+    pass
 
 
 if __name__ == '__main__':
     if os.getenv('VIRTUAL_ENV'):
-        exist, added = geocode()
-        logging.info(f"Геокодировано: {added} записей, пропущено: {exist} записей")
+        geocode()
+        logging.info(f"Геокодировано: {added_cnt} записей, пропущено: {exist_cnt - notfound_cnt} записей, ошибочных адресов: {notfound_cnt}")
     else:
         logging.info('Running outside venv!')
         create_virtualenv()
