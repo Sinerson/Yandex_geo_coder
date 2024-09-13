@@ -23,6 +23,6 @@ requests==2.32.3
 six==1.16.0
 typeguard==4.3.0
 typing_extensions==4.12.2
-urllib3==2.2.2
+urllib3==2.2.3
 yandex-geocoder==3.0.1
 zipp==3.20.1

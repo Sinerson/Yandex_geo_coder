@@ -22,7 +22,12 @@ where POST_INDEX is null
 """
 
 update_post_code = """
+begin
+begin tran
 update INTEGRAL..ADDRESS
 set POST_INDEX = ?
 where ADDRESS_CODE = ?
+commit tran
+select @@transtate
+end
 """
