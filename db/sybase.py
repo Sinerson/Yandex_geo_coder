@@ -19,7 +19,6 @@ class DBConnector(object):
     def create_connection(self):
         return pyodbc.connect(';'.join([self.driver, self.server, self.port, self.dbname, self.user, self.passw,
                                         self.lang, self.autocommit, self.hostname, self.procname, self.appname]))
-
     # def __enter__(self):
     #     self.dbconn = self.create_connection()
     #     return self.dbconn
