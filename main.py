@@ -29,6 +29,7 @@ def create_virtualenv():
 
 def install_requiremets():
     logging.info("Устанавливаю зависимости")
+    subprocess.run(["venv/Scripts/activate.bat"])
     subprocess.run(["venv/Scripts/pip", "install", "-r", "requirements.txt"], check=True)
 
 
@@ -133,7 +134,7 @@ def post_index_processing() -> tuple:
         old_normalized_addresses = {}
 
     normalized_addresses = {k: v for k, v in normalized_addresses.items() if old_normalized_addresses.get(k) != v}
-    logging.info(f"Обнаружено {len(normalized_addresses)} новых адресов для поиска индекса. Приступаю...")
+    logging.info(f"Обнаружено {len(normalized_addresses)} новых адресов для поиска индекса. Приступаю...\n")
 
     for addr_code in normalized_addresses:
         try:
@@ -151,7 +152,7 @@ def post_index_processing() -> tuple:
             # Добавим в словарь не найденные адреса
             old_normalized_addresses[addr_code] = normalized_addresses[addr_code]
             logging.warning(
-                f"Адрес не найден или отсутствует индекс в выдаче: ({addr_code}: {normalized_addresses[addr_code]})"
+                f"Адрес не найден или отсутствует индекс в выдаче: ({addr_code}: {normalized_addresses[addr_code]})\n"
             )
             not_found_addr += 1
     # Законсервируем словарь ненайденных адресов
@@ -167,17 +168,16 @@ def main():
         fa, ona, uc = post_index_processing()
         logging.info(f"При поиске индексов найдено: {fa}, не найдено: {ona}, успешно добавлено в БД: {uc}\n")
         update_sorm_unload()
-        logging.info("Засыпаю на 1 час")
+        logging.info("Засыпаю на 1 час\n")
         sleep(3600)
 
 
 if __name__ == '__main__':
     if os.getenv('VIRTUAL_ENV'):
         main()
-        # logging.info(f"Геокодировано: {added_cnt} , пропущено: {exist_cnt - notfound_cnt}, ошибочных адресов: {notfound_cnt}")
     else:
         logging.info('Running outside venv!')
-        #create_virtualenv()
-        #install_requiremets()
+        create_virtualenv()
+        install_requiremets()
         # geocode()
         main()
